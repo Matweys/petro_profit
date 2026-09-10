@@ -1,0 +1,1258 @@
+<title>Цифровой контур КМД</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Golos+Text:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#E6EBED;
+  --sheet:#F6F8F9;
+  --sheet-2:#EDF1F3;
+  --ink:#0E1A21;
+  --ink-2:#374A55;
+  --muted:#6B7C87;
+  --line:#C3CED4;
+  --line-soft:#D8E0E4;
+  --teal:#0C7079;
+  --teal-soft:rgba(12,112,121,.10);
+  --copper:#A8501C;
+  --copper-soft:rgba(168,80,28,.10);
+  --warn:#A62F38;
+  --warn-soft:rgba(166,47,56,.10);
+  --shadow:0 1px 0 rgba(14,26,33,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0B1218;
+    --sheet:#111A21;
+    --sheet-2:#16212A;
+    --ink:#E2EAEF;
+    --ink-2:#A9B9C3;
+    --muted:#7C8D98;
+    --line:#243139;
+    --line-soft:#1C272F;
+    --teal:#3BB2BC;
+    --teal-soft:rgba(59,178,188,.12);
+    --copper:#E08843;
+    --copper-soft:rgba(224,136,67,.12);
+    --warn:#E5646C;
+    --warn-soft:rgba(229,100,108,.12);
+    --shadow:0 1px 0 rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0B1218;
+  --sheet:#111A21;
+  --sheet-2:#16212A;
+  --ink:#E2EAEF;
+  --ink-2:#A9B9C3;
+  --muted:#7C8D98;
+  --line:#243139;
+  --line-soft:#1C272F;
+  --teal:#3BB2BC;
+  --teal-soft:rgba(59,178,188,.12);
+  --copper:#E08843;
+  --copper-soft:rgba(224,136,67,.12);
+  --warn:#E5646C;
+  --warn-soft:rgba(229,100,108,.12);
+  --shadow:0 1px 0 rgba(0,0,0,.4);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Golos Text","Helvetica Neue",Arial,sans-serif;
+  font-size:16px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.display{font-family:Oswald,"Golos Text",Arial,sans-serif;font-weight:600;letter-spacing:.01em;text-wrap:balance;margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+
+/* ---------- deck shell ---------- */
+.deck{
+  height:100dvh;
+  overflow-y:scroll;
+  scroll-snap-type:y proximity;
+  scroll-behavior:smooth;
+}
+@media (prefers-reduced-motion: reduce){ .deck{scroll-behavior:auto} }
+
+.sheet{
+  scroll-snap-align:start;
+  min-height:100dvh;
+  padding:clamp(18px,3vw,44px);
+  display:flex;
+  flex-direction:column;
+}
+.frame{
+  flex:1;
+  background:var(--sheet);
+  border:1px solid var(--line);
+  padding:clamp(20px,3.2vw,52px) clamp(20px,4vw,64px) clamp(52px,5vw,64px);
+  display:flex;
+  flex-direction:column;
+  gap:clamp(16px,2vw,28px);
+  position:relative;
+  box-shadow:var(--shadow);
+}
+/* drawing-sheet stamp, bottom-right corner of every frame */
+.stamp{
+  position:absolute;
+  right:0;bottom:0;
+  border-left:1px solid var(--line);
+  border-top:1px solid var(--line);
+  display:flex;
+  font-family:"IBM Plex Mono",monospace;
+  font-size:11px;
+  color:var(--muted);
+  background:var(--sheet-2);
+}
+.stamp span{padding:7px 14px;border-left:1px solid var(--line-soft)}
+.stamp span:first-child{border-left:0}
+
+.eyebrow{
+  font-family:Oswald,sans-serif;
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--line-soft)}
+
+h2{font-size:clamp(24px,3.1vw,42px);line-height:1.08;text-transform:uppercase}
+h3{font-size:clamp(15px,1.5vw,18px);text-transform:uppercase;letter-spacing:.04em}
+.lede{font-size:clamp(15px,1.5vw,19px);color:var(--ink-2);max-width:66ch}
+.body-col{max-width:70ch}
+p{margin:0}
+
+.scroll-x{overflow-x:auto;overflow-y:hidden}
+figure{margin:0;display:flex;flex-direction:column;gap:10px}
+figure svg{max-width:100%;height:auto;display:block;color:var(--ink)}
+figcaption{font-size:13px;color:var(--muted);max-width:80ch}
+figcaption.cap-strong{font-size:14px;font-weight:600;color:var(--ink)}
+
+/* ---------- reusable blocks ---------- */
+.grid{display:grid;gap:clamp(12px,1.4vw,20px)}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:900px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+.fact{border-top:2px solid var(--ink);padding-top:12px;display:flex;flex-direction:column;gap:4px}
+.fact b{font-family:Oswald,sans-serif;font-size:clamp(26px,3.4vw,40px);font-weight:600;line-height:1;letter-spacing:-.01em}
+.fact small{font-size:13px;color:var(--muted);line-height:1.35}
+
+.block{border:1px solid var(--line);padding:16px 18px;display:flex;flex-direction:column;gap:8px;background:var(--sheet-2)}
+.block h4{margin:0;font-family:Oswald,sans-serif;font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.block p,.block li{font-size:14px;color:var(--ink-2)}
+.block ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
+
+.tag{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border:1px solid currentColor;display:inline-block}
+.t-code{color:var(--teal)}
+.t-ai{color:var(--copper)}
+.t-warn{color:var(--warn)}
+.t-eng{color:var(--muted)}
+
+.edge-code{border-left:3px solid var(--teal)}
+.edge-ai{border-left:3px solid var(--copper)}
+.edge-warn{border-left:3px solid var(--warn)}
+
+ol.steps{margin:0;padding:0;list-style:none;display:grid;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft)}
+ol.steps li{background:var(--sheet);padding:10px 14px;display:grid;grid-template-columns:34px 1fr auto;gap:14px;align-items:baseline;font-size:14px}
+ol.steps .n{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted)}
+ol.steps .rep{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--teal);white-space:nowrap}
+ol.steps .rep.low{color:var(--muted)}
+
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:820px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+th{font-family:Oswald,sans-serif;font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--line)}
+td.who{font-family:"IBM Plex Mono",monospace;font-size:12px;white-space:nowrap}
+tbody tr:hover{background:var(--sheet-2)}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(14px,2vw,28px)}
+@media (max-width:820px){.split{grid-template-columns:1fr}}
+.list-check,.list-x{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;font-size:14.5px;color:var(--ink-2)}
+.list-check li,.list-x li{display:grid;grid-template-columns:20px 1fr;gap:10px;align-items:start}
+.list-check li::before{content:"→";color:var(--teal);font-family:"IBM Plex Mono",monospace}
+.list-x li::before{content:"✕";color:var(--warn);font-family:"IBM Plex Mono",monospace;font-size:12px;line-height:1.5}
+
+.kicker{font-family:Oswald,sans-serif;font-size:clamp(17px,2vw,24px);font-weight:500;line-height:1.25;text-wrap:balance}
+.rule{height:1px;background:var(--line-soft)}
+
+/* ---------- title sheet ---------- */
+.title-sheet .frame{justify-content:center;gap:clamp(20px,3vw,40px)}
+.title-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(24px,4vw,56px);align-items:center}
+@media (max-width:900px){.title-grid{grid-template-columns:1fr}}
+h1{font-size:clamp(34px,5.6vw,74px);line-height:.98;text-transform:uppercase;letter-spacing:-.005em}
+h1 em{font-style:normal;color:var(--teal)}
+.meta-rows{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--line)}
+.meta-rows div{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+.meta-rows dt{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+
+/* ---------- nav ---------- */
+.rail{
+  position:fixed;right:14px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:5px;z-index:20;
+}
+.rail button{
+  width:26px;height:16px;border:0;background:transparent;cursor:pointer;
+  font-family:"IBM Plex Mono",monospace;font-size:9.5px;color:var(--muted);
+  display:flex;align-items:center;justify-content:flex-end;padding:0;
+  opacity:.55;transition:opacity .15s,color .15s;
+}
+.rail button:hover{opacity:1;color:var(--ink)}
+.rail button[aria-current="true"]{opacity:1;color:var(--teal);font-weight:600}
+.rail button:focus-visible{outline:2px solid var(--teal);outline-offset:2px;opacity:1}
+@media (max-width:720px){.rail{display:none}}
+
+.hint{
+  position:fixed;left:16px;bottom:14px;z-index:20;
+  font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);
+  background:var(--sheet);border:1px solid var(--line);padding:5px 10px;
+  opacity:.85;
+}
+</style>
+
+<div class="deck" id="deck">
+
+<!-- 01 ============================================================ -->
+<section class="sheet title-sheet" data-label="Титул">
+  <div class="frame">
+    <div class="title-grid">
+      <div style="display:flex;flex-direction:column;gap:clamp(18px,2.4vw,30px)">
+        <div class="eyebrow">Предложение по автоматизации · КБ и проектирование</div>
+        <h1>Цифровой<br>контур <em>КМД</em></h1>
+        <p class="lede">Как превратить выпуск деталировочной документации из ручной работы в управляемый процесс — и где в этом процессе действительно нужен искусственный интеллект, а где он только мешает.</p>
+        <div class="meta-rows">
+          <div><dt class="mono">Для кого</dt><dd>ООО «Петропрофиль Плюс» — фасады полного цикла</dd></div>
+          <div><dt class="mono">Предмет</dt><dd>КМД, проектирование, AutoCAD · Revit · SolidWorks</dd></div>
+          <div><dt class="mono">Статус</dt><dd>Гипотезы к обсуждению, не готовое решение</dd></div>
+          <div><dt class="mono">Первый шаг</dt><dd>Обследование одного реального процесса</dd></div>
+        </div>
+      </div>
+      <figure>
+        <svg viewBox="0 0 542 400" role="img" aria-label="Схема стоечно-ригельного фасадного модуля с маркировкой элементов">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <!-- glass panels -->
+          <g fill="var(--teal-soft)" stroke="var(--line)" stroke-width="1">
+            <rect x="60" y="40" width="130" height="96"/><rect x="210" y="40" width="130" height="96"/><rect x="360" y="40" width="130" height="96"/>
+            <rect x="60" y="156" width="130" height="96"/><rect x="210" y="156" width="130" height="96"/><rect x="360" y="156" width="130" height="96"/>
+            <rect x="60" y="272" width="130" height="96"/><rect x="210" y="272" width="130" height="96"/><rect x="360" y="272" width="130" height="96"/>
+          </g>
+          <!-- mullions (стойки) -->
+          <g stroke="currentColor" stroke-width="7" stroke-linecap="square">
+            <line x1="53" y1="30" x2="53" y2="378"/><line x1="200" y1="30" x2="200" y2="378"/>
+            <line x1="350" y1="30" x2="350" y2="378"/><line x1="497" y1="30" x2="497" y2="378"/>
+          </g>
+          <!-- transoms (ригели) -->
+          <g stroke="currentColor" stroke-width="4.5" stroke-linecap="square">
+            <line x1="53" y1="34" x2="497" y2="34"/><line x1="53" y1="146" x2="497" y2="146"/>
+            <line x1="53" y1="262" x2="497" y2="262"/><line x1="53" y1="374" x2="497" y2="374"/>
+          </g>
+          <!-- marks -->
+          <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--teal)">
+            <rect x="30" y="82" width="30" height="16" fill="var(--sheet)" stroke="var(--teal)" stroke-width=".8"/>
+            <text x="45" y="94" text-anchor="middle">С1</text>
+            <rect x="255" y="138" width="30" height="16" fill="var(--sheet)" stroke="var(--teal)" stroke-width=".8"/>
+            <text x="270" y="150" text-anchor="middle">Р1</text>
+            <rect x="243" y="188" width="54" height="16" fill="var(--sheet)" stroke="var(--teal)" stroke-width=".8"/>
+            <text x="270" y="200" text-anchor="middle">СП-04</text>
+          </g>
+          <!-- dimension -->
+          <g stroke="var(--muted)" stroke-width="1">
+            <line x1="512" y1="34" x2="512" y2="146" marker-start="url(#ar)" marker-end="url(#ar)" color="var(--muted)"/>
+          </g>
+          <text x="530" y="94" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)" transform="rotate(-90 530 94)">3300</text>
+        </svg>
+        <figcaption>Стоечно-ригельный модуль: за каждой линией на этой схеме стоит деталь, у которой есть марка, длина, отверстия и место в спецификации.</figcaption>
+      </figure>
+    </div>
+    <div class="stamp"><span>Лист 01</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 02 ============================================================ -->
+<section class="sheet" data-label="О компании">
+  <div class="frame">
+    <div class="eyebrow">Раздел 1 · Контекст</div>
+    <h2>О компании ООО «Петропрофиль Плюс»</h2>
+    <p class="lede">Прежде чем предлагать инструменты, я посмотрел на масштаб. Он определяет, какая автоматизация имеет смысл, а какая — игрушка.</p>
+    <div class="grid g4">
+      <div class="fact"><b>2004</b><small>год основания. Проектирование, изготовление и монтаж фасадов полного цикла</small></div>
+      <div class="fact"><b>30 000 м²</b><small>производственный комплекс: модульные фасады, алюминий и сталь, окна и двери</small></div>
+      <div class="fact"><b>~1 000 м²</b><small>элементного фасада в сутки — около 180 фасадных элементов ежедневно</small></div>
+      <div class="fact"><b>400+</b><small>специалистов в конструкторском, инженерно-техническом и монтажном блоках</small></div>
+    </div>
+    <div class="grid g3">
+      <div class="block">
+        <h4>Системы, с которыми вы работаете</h4>
+        <p>Schüco (премиум-партнёр), Reynaers, ALUTECH, Татпроф. Стекло AGC и Guardian, крепёж Hilti. Каждая система — свой каталог профилей, свои узлы, свои правила деталировки.</p>
+      </div>
+      <div class="block">
+        <h4>Объекты</h4>
+        <p>Лахта Центр, СберСити, ЖК Level и WAVE, Radisson Blu, музейно-выставочные и спортивные комплексы. 500+ объектов в Москве, работа в СПб и регионах.</p>
+      </div>
+      <div class="block edge-code">
+        <h4>Динамика, которая меняет разговор</h4>
+        <p>Объём производства вырос с 55 000 м² в 2023 до 80 000 м² в 2024 — плюс 45% за год. Выручка 2024 — около 6 млрд ₽.</p>
+      </div>
+    </div>
+    <p class="body-col" style="font-size:14px;color:var(--muted)">Источники: официальный сайт p-3.su (разделы «О компании» и «Производство»), вакансии компании, публикации отраслевых СМИ.</p>
+    <div class="stamp"><span>Лист 02</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 03 ============================================================ -->
+<section class="sheet" data-label="Узкое место">
+  <div class="frame">
+    <div class="eyebrow">Раздел 1 · Контекст</div>
+    <h2>Производство масштабируется станками. КБ — нет</h2>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <p class="lede">Когда объём растёт на 45% за год, цех отвечает второй сменой и новой линией. Конструкторское бюро так не умеет: единственный способ выпустить в полтора раза больше КМД — это в полтора раза больше инженеров.</p>
+        <p class="body-col">А инженер-конструктор КМД, который знает Schüco, Татпроф и Алютех, не нанимается за месяц и не выходит на полную производительность за квартал. Ваша же вакансия это подтверждает: высшее техническое, уверенный AutoCAD, знание профильных систем, КМ и КМД, авторский надзор — это редкий человек.</p>
+        <div class="block edge-code">
+          <h4>Отсюда и тезис</h4>
+          <p>Автоматизация КБ — это не «сэкономить на зарплатах». Это снять ограничение роста: дать тем же инженерам выпускать больше документации без падения качества и без выгорания.</p>
+        </div>
+      </div>
+      <figure>
+        <svg viewBox="0 0 460 340" role="img" aria-label="Производственная мощность растёт ступенчато за счёт оборудования, мощность КБ — только за счёт найма">
+          <defs>
+            <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <line x1="52" y1="30" x2="52" y2="286" stroke="var(--line)" stroke-width="1"/>
+          <line x1="52" y1="286" x2="430" y2="286" stroke="var(--line)" stroke-width="1"/>
+          <text x="52" y="20" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted)">объём, м²/год</text>
+          <text x="430" y="304" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted)" text-anchor="end">2023 → 2024 → далее</text>
+          <!-- production step line -->
+          <polyline points="70,240 180,240 180,170 300,170 300,96 420,96" fill="none" stroke="var(--teal)" stroke-width="2.5"/>
+          <g fill="var(--teal)" font-family="IBM Plex Mono, monospace" font-size="11">
+            <circle cx="180" cy="170" r="3.5"/><circle cx="300" cy="96" r="3.5"/>
+            <text x="196" y="160">+ линия, + смена</text>
+          </g>
+          <text x="70" y="232" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--teal)">55 000</text>
+          <text x="306" y="88" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--teal)">80 000 и выше</text>
+          <!-- KB capacity flat-ish -->
+          <polyline points="70,252 180,250 300,238 420,224" fill="none" stroke="var(--warn)" stroke-width="2.5" stroke-dasharray="6 4"/>
+          <text x="300" y="270" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--warn)">мощность КБ</text>
+          <!-- gap -->
+          <line x1="410" y1="104" x2="410" y2="222" stroke="var(--warn)" stroke-width="1.2" marker-start="url(#ar2)" marker-end="url(#ar2)" color="var(--warn)"/>
+          <text x="400" y="168" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--warn)">разрыв</text>
+          <text x="52" y="326" font-family="Golos Text, sans-serif" font-size="12.5" fill="var(--muted)">Сплошная — мощность цеха. Пунктир — мощность КБ.</text>
+        </svg>
+        <figcaption class="cap-strong" style="padding-left:11.3%">Разрыв закрывается либо наймом, либо производительностью инженера. Второе дешевле и быстрее.</figcaption>
+      </figure>
+    </div>
+    <div class="stamp"><span>Лист 03</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 04 ============================================================ -->
+<section class="sheet" data-label="Цепочка">
+  <div class="frame">
+    <div class="eyebrow">Раздел 2 · Как устроен процесс</div>
+    <h2>Где в вашей цепочке рождается КМД</h2>
+    <p class="lede">КМД — это точка, где проектное решение превращается в производственные данные. Всё, что цех режет, сверлит и собирает, приходит отсюда.</p>
+    <div class="scroll-x">
+      <figure>
+        <svg viewBox="0 -54 1000 304" role="img" aria-label="Цепочка от заказчика через архитектуру, КМ и КМД к спецификациям, производству и монтажу">
+          <defs>
+            <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g font-family="Oswald, sans-serif" font-size="13" text-anchor="middle">
+            <g fill="var(--sheet-2)" stroke="var(--line)" stroke-width="1">
+              <rect x="8" y="76" width="118" height="60"/>
+              <rect x="152" y="76" width="118" height="60"/>
+              <rect x="296" y="76" width="118" height="60"/>
+              <rect x="584" y="76" width="118" height="60"/>
+              <rect x="728" y="76" width="118" height="60"/>
+              <rect x="872" y="76" width="118" height="60"/>
+            </g>
+            <rect x="440" y="70" width="118" height="72" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="2"/>
+            <g fill="var(--ink)">
+              <text x="67" y="112">Заказчик</text>
+              <text x="211" y="112">Архитектура</text>
+              <text x="355" y="105">КМ</text>
+              <text x="643" y="105">Специфи-</text><text x="643" y="121">кации</text>
+              <text x="787" y="105">Произ-</text><text x="787" y="121">водство</text>
+              <text x="931" y="112">Монтаж</text>
+            </g>
+            <text x="499" y="105" fill="var(--teal)" font-size="16" font-weight="600">КМД</text>
+            <text x="499" y="124" fill="var(--teal)" font-family="IBM Plex Mono, monospace" font-size="10">деталировка</text>
+            <g font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--muted)">
+              <text x="355" y="121">схема, нагрузки</text>
+            </g>
+          </g>
+          <g stroke="currentColor" stroke-width="1.4" marker-end="url(#ar3)" fill="none">
+            <line x1="128" y1="106" x2="146" y2="106"/>
+            <line x1="272" y1="106" x2="290" y2="106"/>
+            <line x1="416" y1="106" x2="434" y2="106"/>
+            <line x1="560" y1="106" x2="578" y2="106"/>
+            <line x1="704" y1="106" x2="722" y2="106"/>
+            <line x1="848" y1="106" x2="866" y2="106"/>
+          </g>
+          <g font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--muted)" text-anchor="middle">
+            <text x="137" y="98">ТЗ</text>
+            <text x="281" y="98">АР, обмеры</text>
+            <text x="425" y="98">система</text>
+            <text x="569" y="98">детали</text>
+            <text x="713" y="98">номенклатура</text>
+            <text x="857" y="98">изделия</text>
+          </g>
+          <!-- bracket under KMD -->
+          <path d="M440 156 L440 168 L558 168 L558 156" fill="none" stroke="var(--teal)" stroke-width="1.2"/>
+          <text x="499" y="192" text-anchor="middle" font-family="Golos Text, sans-serif" font-size="12.5" fill="var(--teal)">Марки · длины · отверстия · крепёж · стекло · раскрой</text>
+          <text x="499" y="212" text-anchor="middle" font-family="Golos Text, sans-serif" font-size="12.5" fill="var(--muted)">Ошибка здесь уезжает в цех и возвращается переделкой</text>
+          <!-- revision loop -->
+          <path d="M211 76 C 211 2, 499 -6, 499 64" fill="none" stroke="var(--warn)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#ar3)" color="var(--warn)"/>
+          <text x="499" y="-30" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--warn)">каждая ревизия АР → пересчёт КМД</text>
+        </svg>
+        <figcaption class="cap-strong">Чем правее по цепочке обнаружена ошибка, тем дороже она стоит. КМД — последний рубеж, где она ещё бесплатна.</figcaption>
+      </figure>
+    </div>
+    <div class="stamp"><span>Лист 04</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 05 ============================================================ -->
+<section class="sheet" data-label="КМ и КМД">
+  <div class="frame">
+    <div class="eyebrow">Раздел 2 · Как устроен процесс</div>
+    <h2>КМ отвечает «как устроено». КМД — «как изготовить»</h2>
+    <div class="scroll-x">
+      <figure>
+        <svg viewBox="0 0 980 330" role="img" aria-label="Сравнение стадии КМ и стадии КМД на одном и том же элементе фасада">
+          <defs>
+            <marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <line x1="490" y1="20" x2="490" y2="310" stroke="var(--line)" stroke-width="1" stroke-dasharray="4 4"/>
+          <!-- LEFT: KM -->
+          <text x="20" y="34" font-family="Oswald, sans-serif" font-size="15" fill="var(--ink)">КМ · КОНСТРУКЦИИ МЕТАЛЛИЧЕСКИЕ</text>
+          <g stroke="currentColor" stroke-width="5">
+            <line x1="70" y1="70" x2="70" y2="250"/><line x1="230" y1="70" x2="230" y2="250"/><line x1="390" y1="70" x2="390" y2="250"/>
+          </g>
+          <g stroke="currentColor" stroke-width="3">
+            <line x1="70" y1="72" x2="390" y2="72"/><line x1="70" y1="160" x2="390" y2="160"/><line x1="70" y1="248" x2="390" y2="248"/>
+          </g>
+          <g fill="var(--teal-soft)" stroke="none">
+            <rect x="73" y="75" width="154" height="83"/><rect x="233" y="75" width="154" height="83"/>
+            <rect x="73" y="163" width="154" height="83"/><rect x="233" y="163" width="154" height="83"/>
+          </g>
+          <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted)">
+            <text x="0" y="120">стойка</text><text x="0" y="136">шаг 1500</text>
+            <text x="150" y="152">ригель</text>
+            <text x="70" y="278">Схема · сечения · нагрузки · узлы</text>
+            <text x="70" y="296">Ветер, вес стеклопакета, температура</text>
+          </g>
+          <line x1="60" y1="72" x2="60" y2="160" stroke="var(--muted)" stroke-width="1" marker-start="url(#ar4)" marker-end="url(#ar4)" color="var(--muted)"/>
+          <!-- RIGHT: KMD -->
+          <text x="520" y="34" font-family="Oswald, sans-serif" font-size="15" fill="var(--teal)">КМД · ДЕТАЛИРОВОЧНЫЕ</text>
+          <text x="520" y="66" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink)">С-153 · профиль P-100 · L = 3265 · 24 шт.</text>
+          <rect x="520" y="120" width="420" height="30" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.6"/>
+          <g fill="var(--sheet)" stroke="var(--teal)" stroke-width="1.4">
+            <circle cx="556" cy="135" r="5.5"/><circle cx="646" cy="135" r="5.5"/><circle cx="766" cy="135" r="5.5"/><circle cx="896" cy="135" r="5.5"/>
+          </g>
+          <!-- dimension chain -->
+          <g stroke="var(--muted)" stroke-width=".9" color="var(--muted)">
+            <line x1="520" y1="176" x2="556" y2="176" marker-start="url(#ar4)" marker-end="url(#ar4)"/>
+            <line x1="556" y1="176" x2="646" y2="176" marker-start="url(#ar4)" marker-end="url(#ar4)"/>
+            <line x1="646" y1="176" x2="766" y2="176" marker-start="url(#ar4)" marker-end="url(#ar4)"/>
+            <line x1="766" y1="176" x2="896" y2="176" marker-start="url(#ar4)" marker-end="url(#ar4)"/>
+            <line x1="520" y1="204" x2="940" y2="204" marker-start="url(#ar4)" marker-end="url(#ar4)"/>
+          </g>
+          <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--muted)" text-anchor="middle">
+            <text x="538" y="171">120</text><text x="601" y="171">730</text><text x="706" y="171">920</text><text x="831" y="171">730</text>
+            <text x="730" y="199">3265</text>
+          </g>
+          <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted)">
+            <text x="520" y="236">Ø10 под кронштейн · фрезеровка под ригель</text>
+            <text x="520" y="254">Рез 90° · торцевая обработка</text>
+            <text x="520" y="278">Это уже задание для станка, а не идея.</text>
+            <text x="520" y="296">И таких деталей на объекте — тысячи.</text>
+          </g>
+        </svg>
+        <figcaption>Одна и та же стойка на двух стадиях. Слева — конструктивное решение. Справа — данные, по которым её реально изготовят.</figcaption>
+      </figure>
+    </div>
+    <div class="grid g3">
+      <div class="block"><h4>Почему это важно для автоматизации</h4><p>В КМ много инженерного суждения — там автоматизация помогает, но не заменяет. В КМД много механической работы по правилам — там автоматизация выигрывает почти всё.</p></div>
+      <div class="block"><h4>Объём данных</h4><p>На один корпус — сотни стоек и ригелей, сотни стеклопакетов, тысячи крепежей и соединителей. Каждый со своей маркой, длиной и местом в спецификации.</p></div>
+      <div class="block"><h4>Цена ошибки</h4><p>Неверная марка или длина не остаётся в чертеже — она уезжает в раскрой и в цех. Возврат стоит материала, смены и срока.</p></div>
+    </div>
+    <div class="stamp"><span>Лист 05</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 06 ============================================================ -->
+<section class="sheet" data-label="Анатомия">
+  <div class="frame">
+    <div class="eyebrow">Раздел 2 · Как устроен процесс</div>
+    <h2>Из чего состоит изделие, которое мы деталируем</h2>
+    <p class="lede">Автоматизация начинается с того, что программа знает те же сущности, что и конструктор: не «объект №417», а стойка, ригель, кронштейн и закладная.</p>
+    <div class="scroll-x">
+      <figure>
+        <svg viewBox="0 0 1006 400" role="img" aria-label="Разрез узла стоечно-ригельного фасада с обозначением стойки, ригеля, стеклопакета, кронштейна и закладной детали">
+          <defs>
+            <marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+            </marker>
+            <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="7" stroke="var(--line)" stroke-width="1.4"/>
+            </pattern>
+          </defs>
+          <!-- slab -->
+          <rect x="60" y="176" width="150" height="56" fill="url(#hatch)" stroke="currentColor" stroke-width="1.4"/>
+          <text x="135" y="252" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted)">перекрытие</text>
+          <!-- anchor plate -->
+          <rect x="200" y="186" width="12" height="34" fill="var(--copper-soft)" stroke="var(--copper)" stroke-width="1.4"/>
+          <!-- bracket -->
+          <path d="M212 192 L268 192 L268 214 L212 214 z" fill="var(--sheet-2)" stroke="currentColor" stroke-width="1.4"/>
+          <!-- mullion -->
+          <rect x="268" y="60" width="26" height="300" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.8"/>
+          <!-- transom -->
+          <rect x="294" y="192" width="150" height="22" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.8"/>
+          <!-- glazing units -->
+          <rect x="300" y="70" width="230" height="114" fill="var(--teal-soft)" stroke="var(--line)" stroke-width="1"/>
+          <rect x="300" y="222" width="230" height="130" fill="var(--teal-soft)" stroke="var(--line)" stroke-width="1"/>
+          <!-- pressure plate + cap -->
+          <rect x="262" y="66" width="6" height="288" fill="var(--copper-soft)" stroke="var(--copper)" stroke-width="1.2"/>
+          <!-- gasket dots -->
+          <g fill="var(--copper)"><circle cx="297" cy="110" r="2.5"/><circle cx="297" cy="150" r="2.5"/><circle cx="297" cy="262" r="2.5"/><circle cx="297" cy="310" r="2.5"/></g>
+          <!-- leaders -->
+          <g stroke="var(--muted)" stroke-width="1" marker-end="url(#ar5)" color="var(--muted)" fill="none">
+            <path d="M700 96 L560 96 L546 118"/>
+            <path d="M700 136 L420 136 L308 128"/>
+            <path d="M700 176 L470 176 L446 198"/>
+            <path d="M700 216 L620 216 L281 228"/>
+            <path d="M700 256 L600 256 L272 268"/>
+            <path d="M700 296 L520 296 L268 208"/>
+            <path d="M700 336 L420 336 L210 214"/>
+            <path d="M240 330 L262 330 L264 300"/>
+          </g>
+          <g font-family="Golos Text, sans-serif" font-size="13" fill="var(--ink)">
+            <text x="708" y="100">Стеклопакет (СП) — марка, размер, формула</text>
+            <text x="708" y="140">Стойка — вертикальный несущий профиль</text>
+            <text x="708" y="180">Ригель — горизонтальный профиль</text>
+            <text x="708" y="220">Импост / промежуточный профиль</text>
+            <text x="708" y="260">Уплотнитель EPDM</text>
+            <text x="708" y="300">Кронштейн крепления к зданию</text>
+            <text x="708" y="340">Закладная деталь в перекрытии</text>
+            <text x="60" y="334">Прижимная планка</text>
+            <text x="60" y="352">и декоративная крышка</text>
+          </g>
+          <text x="60" y="40" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted)">Разрез узла примыкания фасада к перекрытию · схематично</text>
+        </svg>
+        <figcaption>У каждой из этих сущностей в КМД есть марка, геометрия, обработка и строка в спецификации — именно они становятся объектами в базе данных системы.</figcaption>
+      </figure>
+    </div>
+    <div class="stamp"><span>Лист 06</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 07 ============================================================ -->
+<section class="sheet" data-label="Работа инженера">
+  <div class="frame">
+    <div class="eyebrow">Раздел 3 · Диагноз</div>
+    <h2>Как рождается КМД сегодня</h2>
+    <p class="lede">Десять шагов инженера. Справа — оценка повторяемости: насколько шаг одинаков от проекта к проекту. Повторяемость и есть материал для автоматизации.</p>
+    <ol class="steps">
+      <li><span class="n">01</span><span>Разбор исходных данных: АР, обмеры по факту, ТЗ, замечания заказчика</span><span class="rep low">низкая</span></li>
+      <li><span class="n">02</span><span>Выбор системы и раскладка фасада на элементы и модули</span><span class="rep low">средняя</span></li>
+      <li><span class="n">03</span><span>Подбор профилей, проверка по нагрузкам и прогибам</span><span class="rep low">средняя</span></li>
+      <li><span class="n">04</span><span>Расчёт геометрии каждого элемента: высота этажа минус зазоры → длина стойки</span><span class="rep">высокая</span></li>
+      <li><span class="n">05</span><span>Разработка и адаптация узлов, примыканий, деформационных швов</span><span class="rep low">средняя</span></li>
+      <li><span class="n">06</span><span>Деталировка: рез, отверстия, фрезеровки, соединители, крепёж</span><span class="rep">высокая</span></li>
+      <li><span class="n">07</span><span>Маркировка элементов: С1, Р2, К3 — и сквозная сходимость марок</span><span class="rep">высокая</span></li>
+      <li><span class="n">08</span><span>Спецификации: профиль, стекло, крепёж, уплотнители, фурнитура, погонаж</span><span class="rep">высокая</span></li>
+      <li><span class="n">09</span><span>Оформление: листы, штампы, нумерация, комплектность, экспорт PDF и DWG</span><span class="rep">высокая</span></li>
+      <li><span class="n">10</span><span>Проверка, согласование, выпуск, авторский надзор и отработка изменений</span><span class="rep low">средняя</span></li>
+    </ol>
+    <p class="body-col" style="font-size:14.5px;color:var(--ink-2)">Шаги 4, 6, 7, 8, 9 — это не инженерное творчество. Это дисциплинированное применение правил к большому массиву данных. Ровно то, что машина делает быстрее и без усталости.</p>
+    <div class="stamp"><span>Лист 07</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 08 ============================================================ -->
+<section class="sheet" data-label="Потери">
+  <div class="frame">
+    <div class="eyebrow">Раздел 3 · Диагноз</div>
+    <h2>Где утекает время</h2>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="block edge-warn">
+          <h4>Потеря 1 · Объём однотипных операций</h4>
+          <p>Условный корпус: ~250 стоек, ~480 ригелей, ~250 стеклопакетов, ~1000 крепежей, ~500 соединителей. Это около 2 500 позиций. Даже 30 секунд ручных действий на позицию — это порядка 20 часов на один корпус. И это до первой ревизии.</p>
+        </div>
+        <div class="block edge-warn">
+          <h4>Потеря 2 · Повторный ввод между программами</h4>
+          <p>Данные живут в модели, потом руками попадают в Excel, оттуда в чертёж, оттуда в заявку на производство. Каждый перенос — это и время, и точка расхождения версий.</p>
+        </div>
+        <div class="block edge-warn">
+          <h4>Потеря 3 · Ревизии</h4>
+          <p>Архитектор поменял сетку — и весь массив длин, марок и спецификаций пересчитывается заново, вручную. Автоматизированный процесс пересчитывает это за минуты.</p>
+        </div>
+        <div class="block edge-warn">
+          <h4>Потеря 4 · Знание в одной голове</h4>
+          <p>Если «правильно делает только Иван» — это не только риск отпуска и увольнения. Это ещё и признак того, что правило не записано, а значит его нельзя ни проверить, ни передать, ни автоматизировать.</p>
+        </div>
+      </div>
+      <figure>
+        <svg viewBox="0 0 470 400" role="img" aria-label="Пять точек ручного переноса данных между моделью, Excel, чертежом, PDF и производством">
+          <defs>
+            <marker id="ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g font-family="Oswald, sans-serif" font-size="13" text-anchor="middle">
+            <g fill="var(--sheet-2)" stroke="var(--line)" stroke-width="1">
+              <rect x="120" y="20" width="230" height="46"/>
+              <rect x="120" y="106" width="230" height="46"/>
+              <rect x="120" y="192" width="230" height="46"/>
+              <rect x="120" y="278" width="230" height="46"/>
+            </g>
+            <rect x="120" y="352" width="230" height="40" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.4"/>
+            <g fill="var(--ink)">
+              <text x="235" y="49">Revit · AutoCAD · SolidWorks</text>
+              <text x="235" y="135">Excel — подсчёт и спецификация</text>
+              <text x="235" y="221">Чертёж КМД — марки и размеры</text>
+              <text x="235" y="307">PDF-пакет и заявка в цех</text>
+              <text x="235" y="378" fill="var(--teal)">Производство</text>
+            </g>
+          </g>
+          <g stroke="var(--warn)" stroke-width="1.6" marker-end="url(#ar6)" color="var(--warn)" fill="none" stroke-dasharray="5 4">
+            <line x1="235" y1="66" x2="235" y2="100"/>
+            <line x1="235" y1="152" x2="235" y2="186"/>
+            <line x1="235" y1="238" x2="235" y2="272"/>
+            <line x1="235" y1="324" x2="235" y2="346"/>
+          </g>
+          <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--warn)">
+            <text x="252" y="88">ручной ввод</text>
+            <text x="252" y="174">ручной ввод</text>
+            <text x="252" y="260">ручной ввод</text>
+            <text x="252" y="341">ручной ввод</text>
+          </g>
+          <text x="16" y="200" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--warn)" transform="rotate(-90 16 200)" text-anchor="middle">4 точки расхождения версий</text>
+        </svg>
+        <figcaption>Каждый пунктирный переход — это ручной ввод: время инженера плюс шанс, что данные в двух местах разойдутся.</figcaption>
+      </figure>
+    </div>
+    <div class="stamp"><span>Лист 08</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 09 ============================================================ -->
+<section class="sheet" data-label="Два контура">
+  <div class="frame">
+    <div class="eyebrow">Раздел 4 · Подход</div>
+    <h2>Главный тезис: два контура, а не «внедрим нейросеть»</h2>
+    <p class="lede">Большая часть автоматизации КМД вообще не требует искусственного интеллекта. Смешивать эти два контура — самая дорогая ошибка в подобных проектах.</p>
+    <div class="scroll-x">
+      <figure>
+        <svg viewBox="0 0 980 330" role="img" aria-label="Разделение системы на детерминированный контур автоматизации и контур искусственного интеллекта">
+          <rect x="20" y="60" width="430" height="200" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.6"/>
+          <rect x="530" y="60" width="430" height="200" fill="var(--copper-soft)" stroke="var(--copper)" stroke-width="1.6"/>
+          <text x="40" y="42" font-family="Oswald, sans-serif" font-size="16" fill="var(--teal)">КОНТУР 1 · ДЕТЕРМИНИРОВАННЫЙ</text>
+          <text x="550" y="42" font-family="Oswald, sans-serif" font-size="16" fill="var(--copper)">КОНТУР 2 · ИНТЕЛЛЕКТУАЛЬНЫЙ</text>
+          <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted)">
+            <text x="40" y="86">C# · Revit API · AutoCAD .NET · SolidWorks API · Python · SQL</text>
+            <text x="550" y="86">LLM · поиск по документации · разбор естественного языка</text>
+          </g>
+          <g font-family="Golos Text, sans-serif" font-size="14" fill="var(--ink)">
+            <text x="40" y="120">Считает геометрию и длины</text>
+            <text x="40" y="146">Создаёт элементы и присваивает марки</text>
+            <text x="40" y="172">Собирает спецификации и раскрой</text>
+            <text x="40" y="198">Проверяет комплектность и правила</text>
+            <text x="40" y="224">Формирует листы, штампы, PDF-пакеты</text>
+            <text x="550" y="120">Понимает, что человек попросил</text>
+            <text x="550" y="146">Ищет в ГОСТ, СП, альбомах и архиве</text>
+            <text x="550" y="172">Объясняет, почему проверка не прошла</text>
+            <text x="550" y="198">Разбирает письма и замечания в задачи</text>
+            <text x="550" y="224">Готовит черновики текстовых документов</text>
+          </g>
+          <text x="235" y="252" text-anchor="middle" font-family="Golos Text, sans-serif" font-size="13.5" fill="var(--teal)">Отвечает на вопрос «что технически верно»</text>
+          <text x="745" y="252" text-anchor="middle" font-family="Golos Text, sans-serif" font-size="13.5" fill="var(--copper)">Отвечает на вопрос «что человек хочет и где это найти»</text>
+          <text x="490" y="160" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">граница</text>
+          <line x1="490" y1="70" x2="490" y2="145" stroke="var(--line)" stroke-width="1" stroke-dasharray="4 4"/>
+          <line x1="490" y1="175" x2="490" y2="250" stroke="var(--line)" stroke-width="1" stroke-dasharray="4 4"/>
+          <text x="490" y="298" text-anchor="middle" font-family="Golos Text, sans-serif" font-size="15" fill="var(--ink)">Результат в производство выдаёт только контур 1. Контур 2 к нему не имеет прямого доступа.</text>
+        </svg>
+        <figcaption>Правило: всё, что должно быть воспроизводимым и проверяемым, считает обычный код. AI работает там, где задача — понять человека и найти информацию.</figcaption>
+      </figure>
+    </div>
+    <div class="stamp"><span>Лист 09</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 10 ============================================================ -->
+<section class="sheet" data-label="Без AI">
+  <div class="frame">
+    <div class="eyebrow">Раздел 4 · Подход</div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <h2 style="margin:0">Где AI не нужен</h2><span class="tag t-code">обычный код</span>
+    </div>
+    <p class="lede">Здесь язык программирования надёжнее, быстрее, дешевле и — главное — воспроизводим. Один и тот же вход всегда даёт один и тот же результат. Для документации, по которой режут металл, это обязательное свойство.</p>
+    <div class="grid g3">
+      <div class="block edge-code"><h4>Геометрия и расчёты</h4><ul><li>Длины стоек, ригелей, импостов с учётом зазоров</li><li>Раскладка сетки фасада по осям и отметкам</li><li>Оптимизация раскроя профиля под минимум отхода</li><li>Погонаж, площади, массы</li></ul></div>
+      <div class="block edge-code"><h4>Данные и маркировка</h4><ul><li>Генерация элементов по правилам системы</li><li>Присвоение марок и контроль их сходимости</li><li>Группировка одинаковых позиций</li><li>Сборка спецификаций и ведомостей</li></ul></div>
+      <div class="block edge-code"><h4>Оформление и контроль</h4><ul><li>Заполнение штампов, нумерация листов</li><li>Пакетная выгрузка PDF и DWG</li><li>Проверка заполненности параметров</li><li>Проверка комплектности выпуска</li></ul></div>
+    </div>
+    <div class="block edge-code" style="background:transparent;border-color:var(--teal)">
+      <h4>Почему это важно проговорить на встрече</h4>
+      <p>Если подрядчик предлагает «пропустить всё через нейросеть» — он либо не считал стоимость, либо не понимает цену ошибки в КМД. Языковая модель может ошибиться в арифметике и сделать это уверенно. Функция на C# — не может.</p>
+    </div>
+    <div class="stamp"><span>Лист 10</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 11 ============================================================ -->
+<section class="sheet" data-label="С AI">
+  <div class="frame">
+    <div class="eyebrow">Раздел 4 · Подход</div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <h2 style="margin:0">Где AI даёт то, чего код не может</h2><span class="tag t-ai">языковая модель</span>
+    </div>
+    <p class="lede">Всё это — задачи на понимание текста и смысла. Обычная программа здесь либо бессильна, либо требует годы разработки.</p>
+    <div class="grid g2">
+      <div class="block edge-ai"><h4>Поиск по нормативной базе и каталогам</h4><p>ГОСТ, СП, ТУ, альбомы технических решений Schüco и Татпроф, внутренние стандарты. Инженер спрашивает словами — система находит фрагмент и даёт ссылку на источник. Не «AI решил», а «AI нашёл, читайте здесь».</p></div>
+      <div class="block edge-ai"><h4>Поиск решений в архиве проектов</h4><p>«Какой узел мы применяли для примыкания к парапету на объектах с такой системой?» Поиск по смыслу, а не по имени файла. Многолетний архив компании становится доступным активом, а не папкой на сервере.</p></div>
+      <div class="block edge-ai"><h4>Объяснение результатов проверки</h4><p>Проверку выполняет код. AI переводит её результат на человеческий язык: что именно не так, где это в модели, что обычно делают в таком случае.</p></div>
+      <div class="block edge-ai"><h4>Естественный язык вместо меню</h4><p>«Собери спецификацию по фасаду корпуса Б» вместо десяти кликов по вкладкам. AI разбирает фразу в конкретный вызов функции, которую выполняет обычный код.</p></div>
+      <div class="block edge-ai"><h4>Разбор входящих в свободной форме</h4><p>Письмо заказчика или лист замечаний превращается в структурированный список изменений с привязкой к элементам и листам.</p></div>
+      <div class="block edge-ai"><h4>Черновики текстовых документов</h4><p>Пояснительные записки, ведомости, типовые ответы по шаблонам компании. Черновик за минуту вместо часа, инженер правит и подписывает.</p></div>
+    </div>
+    <div class="stamp"><span>Лист 11</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 12 ============================================================ -->
+<section class="sheet" data-label="Путь запроса">
+  <div class="frame">
+    <div class="eyebrow">Раздел 5 · Как это работает</div>
+    <h2>Путь одного запроса: «Проверь КМД корпуса Б»</h2>
+    <div class="scroll-x">
+      <figure>
+        <svg viewBox="0 0 960 520" role="img" aria-label="Пошаговый путь запроса инженера через AI, ядро автоматизации и CAD API обратно к инженеру">
+          <defs>
+            <marker id="ar7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <!-- lane headers -->
+          <g font-family="Oswald, sans-serif" font-size="13" text-anchor="middle">
+            <text x="100" y="26" fill="var(--muted)">ИНЖЕНЕР</text>
+            <text x="360" y="26" fill="var(--copper)">AI</text>
+            <text x="620" y="26" fill="var(--teal)">ЯДРО + CAD API</text>
+            <text x="870" y="26" fill="var(--muted)">РЕЗУЛЬТАТ</text>
+          </g>
+          <g stroke="var(--line-soft)" stroke-width="1" stroke-dasharray="3 5">
+            <line x1="230" y1="36" x2="230" y2="500"/><line x1="490" y1="36" x2="490" y2="500"/><line x1="750" y1="36" x2="750" y2="500"/>
+          </g>
+          <!-- steps -->
+          <g font-family="Golos Text, sans-serif" font-size="12.5">
+            <!-- 1 -->
+            <rect x="20" y="48" width="190" height="46" fill="var(--sheet-2)" stroke="var(--line)"/>
+            <text x="32" y="68" fill="var(--ink)">Пишет обычной фразой:</text>
+            <text x="32" y="85" fill="var(--ink)" font-family="IBM Plex Mono, monospace" font-size="11.5">«Проверь КМД корпуса Б»</text>
+            <!-- 2 -->
+            <rect x="270" y="48" width="200" height="46" fill="var(--copper-soft)" stroke="var(--copper)"/>
+            <text x="282" y="68" fill="var(--ink)">Разбирает фразу в команду:</text>
+            <text x="282" y="85" fill="var(--copper)" font-family="IBM Plex Mono, monospace" font-size="11">check_kmd(project="Б")</text>
+            <!-- 3 -->
+            <rect x="530" y="48" width="200" height="46" fill="var(--teal-soft)" stroke="var(--teal)"/>
+            <text x="542" y="68" fill="var(--ink)">Открывает модель проекта,</text>
+            <text x="542" y="85" fill="var(--ink)">читает 1 248 элементов</text>
+            <!-- 4 -->
+            <rect x="530" y="114" width="200" height="62" fill="var(--teal-soft)" stroke="var(--teal)"/>
+            <text x="542" y="134" fill="var(--ink)">Прогоняет правила:</text>
+            <text x="542" y="151" fill="var(--ink)">марки · длины · параметры</text>
+            <text x="542" y="168" fill="var(--ink)">комплектность · спецификация</text>
+            <!-- 5 result data -->
+            <rect x="790" y="114" width="160" height="62" fill="var(--sheet-2)" stroke="var(--line)"/>
+            <text x="802" y="134" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink)">elements: 1248</text>
+            <text x="802" y="151" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--warn)">errors: 17</text>
+            <text x="802" y="168" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">warnings: 4</text>
+            <!-- 6 -->
+            <rect x="270" y="196" width="200" height="62" fill="var(--copper-soft)" stroke="var(--copper)"/>
+            <text x="282" y="216" fill="var(--ink)">Переводит результат</text>
+            <text x="282" y="233" fill="var(--ink)">на язык человека и</text>
+            <text x="282" y="250" fill="var(--ink)">группирует по причинам</text>
+            <!-- 7 -->
+            <rect x="20" y="196" width="190" height="62" fill="var(--sheet-2)" stroke="var(--line)"/>
+            <text x="32" y="216" fill="var(--ink)">Видит: 17 ошибок,</text>
+            <text x="32" y="233" fill="var(--ink)">из них 12 типовых</text>
+            <text x="32" y="250" fill="var(--ink)">и исправимых автоматически</text>
+            <!-- 8 decision -->
+            <rect x="20" y="286" width="190" height="46" fill="var(--sheet)" stroke="var(--ink)" stroke-width="1.6"/>
+            <text x="32" y="306" fill="var(--ink)">Решает: исправлять?</text>
+            <text x="32" y="323" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink)">[ Да ]  [ Показать ]</text>
+            <!-- 9 -->
+            <rect x="530" y="286" width="200" height="46" fill="var(--teal-soft)" stroke="var(--teal)"/>
+            <text x="542" y="306" fill="var(--ink)">Код правит 12 позиций</text>
+            <text x="542" y="323" fill="var(--ink)">в модели, пишет журнал</text>
+            <!-- 10 -->
+            <rect x="530" y="352" width="200" height="46" fill="var(--teal-soft)" stroke="var(--teal)"/>
+            <text x="542" y="372" fill="var(--ink)">Пересобирает спецификацию</text>
+            <text x="542" y="389" fill="var(--ink)">и пакет листов</text>
+            <!-- 11 -->
+            <rect x="790" y="352" width="160" height="46" fill="var(--sheet-2)" stroke="var(--line)"/>
+            <text x="802" y="372" fill="var(--ink)">Обновлённые КМД</text>
+            <text x="802" y="389" fill="var(--ink)">и спецификация</text>
+            <!-- 12 -->
+            <rect x="20" y="418" width="190" height="46" fill="var(--sheet-2)" stroke="var(--line)"/>
+            <text x="32" y="438" fill="var(--ink)">5 оставшихся ошибок</text>
+            <text x="32" y="455" fill="var(--ink)">разбирает сам</text>
+          </g>
+          <!-- flow arrows -->
+          <g stroke="currentColor" stroke-width="1.3" fill="none" marker-end="url(#ar7)">
+            <line x1="210" y1="71" x2="264" y2="71"/>
+            <line x1="470" y1="71" x2="524" y2="71"/>
+            <line x1="630" y1="94" x2="630" y2="108"/>
+            <line x1="730" y1="145" x2="784" y2="145"/>
+            <path d="M790 176 L640 190 L500 216" stroke="var(--copper)" color="var(--copper)"/>
+            <line x1="264" y1="227" x2="216" y2="227" marker-end="url(#ar7)"/>
+            <line x1="115" y1="258" x2="115" y2="280"/>
+            <path d="M210 306 L370 306 L524 306" stroke="var(--teal)" color="var(--teal)"/>
+            <line x1="630" y1="332" x2="630" y2="346"/>
+            <line x1="730" y1="375" x2="784" y2="375"/>
+            <path d="M790 398 L400 412 L216 438"/>
+          </g>
+          <text x="360" y="296" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--teal)" text-anchor="middle">подтверждение инженера</text>
+          <text x="480" y="500" text-anchor="middle" font-family="Golos Text, sans-serif" font-size="13.5" fill="var(--ink)">AI ни на одном шаге не менял модель. Он понял запрос и объяснил результат — правки сделал код, после разрешения человека.</text>
+        </svg>
+        <figcaption>Один запрос вместо десятков ручных проверок. Ответственность за решение остаётся у инженера — система только исполняет и объясняет.</figcaption>
+      </figure>
+    </div>
+    <div class="stamp"><span>Лист 12</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 13 ============================================================ -->
+<section class="sheet" data-label="Границы AI">
+  <div class="frame">
+    <div class="eyebrow">Раздел 5 · Как это работает</div>
+    <h2>Человек в контуре: где у AI жёсткая граница</h2>
+    <p class="lede">Под КМД стоит подпись. Ответственность нельзя делегировать модели — и не нужно. Поэтому границы задаются архитектурно, а не обещаниями.</p>
+    <div class="split">
+      <div class="block edge-ai" style="background:transparent">
+        <h4 style="color:var(--copper)">AI можно</h4>
+        <ul class="list-check">
+          <li>Читать документацию, каталоги и архив проектов</li>
+          <li>Искать похожие решения и показывать источники</li>
+          <li>Объяснять результаты автоматических проверок</li>
+          <li>Превращать фразу инженера в команду системе</li>
+          <li>Готовить черновики текстов и ведомостей</li>
+          <li>Предлагать варианты — с пометкой, что это предложение</li>
+        </ul>
+      </div>
+      <div class="block edge-warn" style="background:transparent">
+        <h4 style="color:var(--warn)">AI нельзя без подтверждения человека</h4>
+        <ul class="list-x">
+          <li>Назначать сечения, размеры и геометрию</li>
+          <li>Самостоятельно менять модель или чертёж</li>
+          <li>Трактовать норматив как окончательный вывод</li>
+          <li>Утверждать выпуск КМД</li>
+          <li>Передавать данные в производство</li>
+          <li>Принимать решение, за которое отвечает конструктор</li>
+        </ul>
+      </div>
+    </div>
+    <div class="block">
+      <h4>Как это выглядит в интерфейсе</h4>
+      <p class="mono" style="font-size:13px;color:var(--ink-2);white-space:pre-wrap">Найдено 17 несоответствий. 12 из них типовые: отсутствует марка при заполненном профиле и длине.
+Исправить автоматически?   [ Да ]   [ Показать список ]   [ Отмена ]</p>
+      <p>Ни одно изменение не уходит в модель без явного «да». Все правки пишутся в журнал: кто, когда, что изменил — это же и есть основа нормоконтроля.</p>
+    </div>
+    <div class="stamp"><span>Лист 13</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 14 ============================================================ -->
+<section class="sheet" data-label="Архитектура">
+  <div class="frame">
+    <div class="eyebrow">Раздел 6 · Целевая картина</div>
+    <h2>Как выглядит система целиком</h2>
+    <div class="scroll-x">
+      <figure>
+        <svg viewBox="0 0 1000 560" role="img" aria-label="Слоистая архитектура платформы: инженер, интерфейсы, AI-слой, ядро автоматизации, коннекторы CAD, база данных и выходные документы">
+          <defs>
+            <marker id="ar8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <!-- engineer -->
+          <rect x="380" y="14" width="240" height="42" fill="var(--sheet-2)" stroke="var(--ink)" stroke-width="1.6"/>
+          <text x="500" y="41" text-anchor="middle" font-family="Oswald, sans-serif" font-size="15" fill="var(--ink)">ИНЖЕНЕР-КОНСТРУКТОР</text>
+          <!-- interfaces -->
+          <g fill="var(--sheet-2)" stroke="var(--line)" stroke-width="1">
+            <rect x="230" y="84" width="170" height="38"/><rect x="415" y="84" width="170" height="38"/><rect x="600" y="84" width="170" height="38"/>
+          </g>
+          <g font-family="Golos Text, sans-serif" font-size="12.5" fill="var(--ink)" text-anchor="middle">
+            <text x="315" y="108">Кнопка внутри CAD</text><text x="500" y="108">Веб-кабинет проекта</text><text x="685" y="108">Строка запроса</text>
+          </g>
+          <!-- AI layer -->
+          <rect x="150" y="146" width="700" height="76" fill="var(--copper-soft)" stroke="var(--copper)" stroke-width="1.8"/>
+          <text x="170" y="170" font-family="Oswald, sans-serif" font-size="14" fill="var(--copper)">AI-СЛОЙ</text>
+          <g font-family="Golos Text, sans-serif" font-size="12.5" fill="var(--ink)">
+            <text x="170" y="194">Разбор запроса → команда</text>
+            <text x="400" y="194">Поиск по нормативам и архиву</text>
+            <text x="660" y="194">Объяснение результатов</text>
+            <text x="170" y="212" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted)">не имеет прямого доступа к модели — только вызывает разрешённые функции ядра</text>
+          </g>
+          <!-- core -->
+          <rect x="150" y="246" width="700" height="86" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.8"/>
+          <text x="170" y="270" font-family="Oswald, sans-serif" font-size="14" fill="var(--teal)">ЯДРО АВТОМАТИЗАЦИИ · C# и Python</text>
+          <g font-family="Golos Text, sans-serif" font-size="12.5" fill="var(--ink)">
+            <text x="170" y="294">Правила систем</text><text x="330" y="294">Расчёт геометрии</text><text x="500" y="294">Маркировка</text><text x="640" y="294">Раскрой</text><text x="760" y="294">Нормоконтроль</text>
+            <text x="170" y="316">Генераторы спецификаций, листов и пакетов документации</text>
+          </g>
+          <!-- CAD connectors -->
+          <g fill="var(--sheet-2)" stroke="var(--line)" stroke-width="1.2">
+            <rect x="150" y="356" width="210" height="52"/><rect x="395" y="356" width="210" height="52"/><rect x="640" y="356" width="210" height="52"/>
+          </g>
+          <g font-family="Oswald, sans-serif" font-size="13.5" fill="var(--ink)" text-anchor="middle">
+            <text x="255" y="379">AutoCAD</text><text x="500" y="379">Revit</text><text x="745" y="379">SolidWorks</text>
+          </g>
+          <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted)" text-anchor="middle">
+            <text x="255" y="397">.NET API · DWG</text><text x="500" y="397">Revit API · RVT · IFC</text><text x="745" y="397">API · SLDPRT/ASM</text>
+          </g>
+          <!-- data -->
+          <rect x="150" y="432" width="700" height="44" fill="var(--sheet-2)" stroke="var(--line)" stroke-width="1.2"/>
+          <text x="500" y="452" text-anchor="middle" font-family="Oswald, sans-serif" font-size="13.5" fill="var(--ink)">ЕДИНАЯ БАЗА ДАННЫХ ПРОЕКТА</text>
+          <text x="500" y="468" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted)">элементы · марки · профили · спецификации · версии · журнал изменений</text>
+          <!-- outputs -->
+          <g fill="var(--sheet-2)" stroke="var(--line)" stroke-width="1">
+            <rect x="150" y="500" width="160" height="38"/><rect x="330" y="500" width="160" height="38"/><rect x="510" y="500" width="160" height="38"/><rect x="690" y="500" width="160" height="38"/>
+          </g>
+          <g font-family="Golos Text, sans-serif" font-size="12.5" fill="var(--ink)" text-anchor="middle">
+            <text x="230" y="524">Чертежи КМД</text><text x="410" y="524">Спецификации</text><text x="590" y="524">Данные для ЧПУ</text><text x="770" y="524">Отчёты и сроки</text>
+          </g>
+          <!-- arrows -->
+          <g stroke="currentColor" stroke-width="1.4" fill="none" marker-end="url(#ar8)">
+            <line x1="500" y1="56" x2="500" y2="78"/>
+            <line x1="500" y1="122" x2="500" y2="140"/>
+            <line x1="500" y1="222" x2="500" y2="240"/>
+            <line x1="500" y1="332" x2="500" y2="350"/>
+            <line x1="500" y1="408" x2="500" y2="426"/>
+            <line x1="500" y1="476" x2="500" y2="494"/>
+          </g>
+          <!-- feedback -->
+          <path d="M880 300 C 940 300, 940 40, 628 36" fill="none" stroke="var(--teal)" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#ar8)" color="var(--teal)"/>
+          <text x="906" y="180" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--teal)" text-anchor="middle" transform="rotate(-90 906 180)">результат и запрос подтверждения</text>
+        </svg>
+        <figcaption>Инженер остаётся в своей среде — AutoCAD, Revit, SolidWorks. Меняется не рабочее место, а количество ручных действий за ним.</figcaption>
+      </figure>
+    </div>
+    <div class="stamp"><span>Лист 14</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 15 ============================================================ -->
+<section class="sheet" data-label="Модули">
+  <div class="frame">
+    <div class="eyebrow">Раздел 6 · Целевая картина</div>
+    <h2>Из каких частей это собирается</h2>
+    <p class="lede">Систему не нужно строить целиком. Каждый модуль имеет самостоятельную ценность и может быть внедрён отдельно.</p>
+    <div class="grid g2">
+      <div class="block edge-code">
+        <h4>Модуль A · AutoCAD <span class="tag t-code" style="margin-left:6px">C# .NET</span></h4>
+        <ul>
+          <li>Параметрическая библиотека узлов под ваши профильные системы: узел собирается из параметров, а не перечерчивается</li>
+          <li>Извлечение данных из DWG в спецификацию без ручного ввода</li>
+          <li>Автоматическая маркировка и контроль сходимости марок</li>
+          <li>Команда нормоконтроля: слои, блоки, марки, размеры, дубли</li>
+          <li>Пакетное оформление листов, штампов и выгрузка PDF</li>
+        </ul>
+      </div>
+      <div class="block edge-code">
+        <h4>Модуль B · Revit <span class="tag t-code" style="margin-left:6px">Revit API</span></h4>
+        <ul>
+          <li>Проверка модели на полноту параметров перед выпуском</li>
+          <li>Массовое заполнение параметров и марок по правилам</li>
+          <li>Ведомости и выгрузка данных в единую базу</li>
+          <li>Координация с моделью генподрядчика через IFC</li>
+          <li>Сверка изменений между ревизиями модели</li>
+        </ul>
+      </div>
+      <div class="block edge-code">
+        <h4>Модуль C · SolidWorks <span class="tag t-code" style="margin-left:6px">SW API</span></h4>
+        <ul>
+          <li>Параметризация типовых узлов и сборок: размер на входе — готовая деталь на выходе</li>
+          <li>Конфигурации вместо копирования моделей</li>
+          <li>Автогенерация чертежей деталей и BOM</li>
+          <li>Подготовка данных для станков</li>
+        </ul>
+      </div>
+      <div class="block edge-ai">
+        <h4>Модуль D · AI-слой <span class="tag t-ai" style="margin-left:6px">LLM</span></h4>
+        <ul>
+          <li>Поиск по нормативам, альбомам и архиву проектов со ссылками на источник</li>
+          <li>Ассистент инженера: запрос словами вместо навигации по меню</li>
+          <li>Объяснение ошибок нормоконтроля</li>
+          <li>Разбор писем и замечаний в структурированные задачи</li>
+        </ul>
+      </div>
+    </div>
+    <div class="block"><h4>Модуль 0 · Ядро и данные <span class="tag t-code" style="margin-left:6px">Python · PostgreSQL</span></h4><p>Единая модель данных проекта, движок правил, расчёты, раскрой, версионирование и журнал изменений. Это то, что связывает три CAD-системы в один процесс вместо трёх изолированных.</p></div>
+    <div class="stamp"><span>Лист 15</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 16 ============================================================ -->
+<section class="sheet" data-label="Карта">
+  <div class="frame">
+    <div class="eyebrow">Раздел 7 · Что конкретно автоматизируем</div>
+    <h2>Карта автоматизации КМД</h2>
+    <p class="lede">Гипотезы, которые нужно проверить на ваших реальных процессах. Столбец «AI» показывает, где нужна языковая модель, а где достаточно обычного кода.</p>
+    <div class="scroll-x">
+      <table>
+        <thead><tr><th style="width:20%">Операция</th><th style="width:28%">Что делает инженер сейчас</th><th style="width:30%">Что делает система</th><th style="width:12%">Технология</th><th style="width:10%">AI</th></tr></thead>
+        <tbody>
+          <tr><td>Приём исходных данных</td><td>Открывает DWG/RVT, вычитывает оси, отметки, размеры</td><td>Импорт и нормализация в единую структуру</td><td class="who">C#</td><td class="who t-code">нет</td></tr>
+          <tr><td>Раскладка фасада</td><td>Вручную разбивает сетку на элементы</td><td>Генерация раскладки по правилам системы</td><td class="who">C# / Python</td><td class="who t-code">нет</td></tr>
+          <tr><td>Расчёт геометрии</td><td>Считает длины с учётом зазоров, по позиции</td><td>Пересчёт всего массива за секунды</td><td class="who">Python</td><td class="who t-code">нет</td></tr>
+          <tr><td>Генерация элементов</td><td>Создаёт сотни однотипных объектов</td><td>Создание по правилу, с параметрами</td><td class="who">CAD API</td><td class="who t-code">нет</td></tr>
+          <tr><td>Маркировка</td><td>Присваивает марки, следит за сходимостью</td><td>Автоприсвоение и сквозная проверка</td><td class="who">CAD API</td><td class="who t-code">нет</td></tr>
+          <tr><td>Узлы и примыкания</td><td>Перечерчивает типовой узел под случай</td><td>Сборка узла из параметрической библиотеки</td><td class="who">C#</td><td class="who t-ai">частично</td></tr>
+          <tr><td>Спецификации</td><td>Собирает и считает в Excel</td><td>Сборка из модели, без ручного ввода</td><td class="who">Python</td><td class="who t-code">нет</td></tr>
+          <tr><td>Раскрой профиля</td><td>Прикидывает вручную или по опыту</td><td>Оптимизация под минимум отхода</td><td class="who">Python</td><td class="who t-code">нет</td></tr>
+          <tr><td>Нормоконтроль</td><td>Просматривает листы глазами</td><td>Прогон правил и отчёт по нарушениям</td><td class="who">Rules engine</td><td class="who t-ai">объясняет</td></tr>
+          <tr><td>Комплектность выпуска</td><td>Сверяет по памяти и чек-листу</td><td>Проверка состава пакета документации</td><td class="who">Python</td><td class="who t-code">нет</td></tr>
+          <tr><td>Оформление листов</td><td>Заполняет штампы, нумерует, экспортирует</td><td>Пакетное оформление и выгрузка</td><td class="who">CAD API</td><td class="who t-code">нет</td></tr>
+          <tr><td>Отработка ревизий</td><td>Ищет отличия и правит вручную</td><td>Сверка версий и список затронутых позиций</td><td class="who">C# / БД</td><td class="who t-ai">объясняет</td></tr>
+          <tr><td>Поиск по нормативам</td><td>Ищет в PDF и папках</td><td>Ответ по смыслу со ссылкой на источник</td><td class="who">LLM + поиск</td><td class="who t-ai">да</td></tr>
+          <tr><td>Поиск в архиве проектов</td><td>Спрашивает коллег, помнит сам</td><td>Поиск похожих решений по описанию</td><td class="who">LLM + поиск</td><td class="who t-ai">да</td></tr>
+          <tr><td>Разбор замечаний заказчика</td><td>Читает письмо, выписывает пункты</td><td>Структурированный список изменений</td><td class="who">LLM</td><td class="who t-ai">да</td></tr>
+          <tr><td>Запуск операций</td><td>Ищет нужный инструмент в меню</td><td>Команда обычной фразой</td><td class="who">LLM + ядро</td><td class="who t-ai">да</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="stamp"><span>Лист 16</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 17 ============================================================ -->
+<section class="sheet" data-label="Приоритеты">
+  <div class="frame">
+    <div class="eyebrow">Раздел 7 · Что конкретно автоматизируем</div>
+    <h2>С чего начинать: приоритеты по отдаче</h2>
+    <p class="lede">Порядок здесь не случаен. Сначала то, что даёт результат за недели и не требует менять привычки инженеров. AI — осознанно в конце, когда есть данные и работающее ядро.</p>
+    <div class="grid g3">
+      <div class="block edge-code">
+        <h4>Первая волна · недели</h4>
+        <ul>
+          <li>Автоматическая сборка спецификаций</li>
+          <li>Нормоконтроль чертежей и модели</li>
+          <li>Автоматическая маркировка</li>
+          <li>Пакетное оформление и выгрузка листов</li>
+          <li>Массовое заполнение параметров</li>
+        </ul>
+        <p style="font-size:13px;color:var(--muted)">Заметный эффект, минимальный риск, ничего не ломает в текущем процессе.</p>
+      </div>
+      <div class="block edge-code">
+        <h4>Вторая волна · месяцы</h4>
+        <ul>
+          <li>Параметрическая библиотека узлов</li>
+          <li>Генерация элементов по раскладке</li>
+          <li>Оптимизация раскроя профиля</li>
+          <li>Единая база данных проекта</li>
+          <li>Сверка ревизий и отслеживание изменений</li>
+        </ul>
+        <p style="font-size:13px;color:var(--muted)">Здесь появляется связность: данные перестают вводиться повторно.</p>
+      </div>
+      <div class="block edge-ai">
+        <h4>Третья волна · AI</h4>
+        <ul>
+          <li>Поиск по нормативам и каталогам</li>
+          <li>Поиск решений в архиве проектов</li>
+          <li>Ассистент инженера на естественном языке</li>
+          <li>Объяснение ошибок нормоконтроля</li>
+          <li>Разбор входящих документов</li>
+        </ul>
+        <p style="font-size:13px;color:var(--muted)">Строится на данных, которые появились в первых двух волнах. Раньше — не на чем.</p>
+      </div>
+    </div>
+    <p class="kicker" style="color:var(--ink-2);max-width:80ch">Самая частая ошибка в таких проектах — начать с третьей волны, потому что она эффектнее выглядит на демонстрации.</p>
+    <div class="stamp"><span>Лист 17</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 18 ============================================================ -->
+<section class="sheet" data-label="План">
+  <div class="frame">
+    <div class="eyebrow">Раздел 8 · Как двигаться</div>
+    <h2>Дорожная карта</h2>
+    <div class="scroll-x">
+      <figure>
+        <svg viewBox="0 0 1000 250" role="img" aria-label="Пять этапов проекта: обследование, MVP, пилот, платформа, AI-слой">
+          <line x1="20" y1="118" x2="980" y2="118" stroke="var(--line)" stroke-width="1"/>
+          <g stroke="currentColor" stroke-width="1.4">
+            <line x1="30" y1="110" x2="30" y2="126"/><line x1="230" y1="110" x2="230" y2="126"/>
+            <line x1="430" y1="110" x2="430" y2="126"/><line x1="630" y1="110" x2="630" y2="126"/><line x1="830" y1="110" x2="830" y2="126"/>
+          </g>
+          <g fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.4">
+            <rect x="30" y="52" width="180" height="52"/>
+            <rect x="230" y="52" width="180" height="52"/>
+            <rect x="430" y="52" width="180" height="52"/>
+            <rect x="630" y="52" width="180" height="52"/>
+          </g>
+          <rect x="830" y="52" width="150" height="52" fill="var(--copper-soft)" stroke="var(--copper)" stroke-width="1.4"/>
+          <g font-family="Oswald, sans-serif" font-size="13.5" fill="var(--ink)">
+            <text x="44" y="74">ЭТАП 0 · ОБСЛЕДОВАНИЕ</text>
+            <text x="244" y="74">ЭТАП 1 · MVP</text>
+            <text x="444" y="74">ЭТАП 2 · ПИЛОТ</text>
+            <text x="644" y="74">ЭТАП 3 · ПЛАТФОРМА</text>
+            <text x="844" y="74" fill="var(--copper)">ЭТАП 4 · AI-СЛОЙ</text>
+          </g>
+          <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)">
+            <text x="44" y="94">2–4 недели</text><text x="244" y="94">4–6 недель</text><text x="444" y="94">4–8 недель</text><text x="644" y="94">3–6 месяцев</text><text x="844" y="94" fill="var(--copper)">параллельно</text>
+          </g>
+          <g font-family="Golos Text, sans-serif" font-size="12.5" fill="var(--ink-2)">
+            <text x="30" y="152">Карта процесса,</text><text x="30" y="169">замер трудозатрат,</text><text x="30" y="186">3 кандидата на MVP,</text><text x="30" y="203">оценка эффекта</text>
+            <text x="230" y="152">Один процесс,</text><text x="230" y="169">один отдел,</text><text x="230" y="186">работает на</text><text x="230" y="203">реальных данных</text>
+            <text x="430" y="152">Реальный объект,</text><text x="430" y="169">замер «до и после»,</text><text x="430" y="186">обратная связь</text><text x="430" y="203">от инженеров</text>
+            <text x="630" y="152">Общее ядро, база,</text><text x="630" y="169">модули по CAD,</text><text x="630" y="186">нормоконтроль,</text><text x="630" y="203">версионирование</text>
+            <text x="830" y="152" fill="var(--copper)">Поиск по базе</text><text x="830" y="169" fill="var(--copper)">знаний, ассистент,</text><text x="830" y="186" fill="var(--copper)">команды словами</text>
+          </g>
+          <circle cx="230" cy="118" r="5" fill="var(--teal)"/>
+          <text x="230" y="34" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--teal)">точка принятия решения: продолжаем или нет</text>
+        </svg>
+        <figcaption>После этапа 0 у вас на руках цифры, а не обещания: сколько времени уходит сейчас, что именно можно снять и сколько это стоит.</figcaption>
+      </figure>
+    </div>
+    <div class="grid g3">
+      <div class="block"><h4>Принцип 1</h4><p>Каждый этап заканчивается работающим результатом, а не документом. Даже обследование даёт замер, которым можно пользоваться независимо от продолжения.</p></div>
+      <div class="block"><h4>Принцип 2</h4><p>Пилот идёт на реальном объекте, не на демонстрационном примере. Иначе замер «до и после» ничего не стоит.</p></div>
+      <div class="block"><h4>Принцип 3</h4><p>Инженер — соавтор, а не испытуемый. Инструмент, который делали без него, он обойдёт стороной, и это будет правильно.</p></div>
+    </div>
+    <div class="stamp"><span>Лист 18</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 19 ============================================================ -->
+<section class="sheet" data-label="Эффект">
+  <div class="frame">
+    <div class="eyebrow">Раздел 8 · Как двигаться</div>
+    <h2>Как считать эффективность</h2>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="block edge-code">
+          <h4>Формула</h4>
+          <p class="mono" style="font-size:13px;color:var(--ink)">Эффект = (Т_до − Т_после) × инженеров × проектов × стоимость часа<br>+ стоимость исключённых переделок<br>+ экономия материала на раскрое</p>
+        </div>
+        <div class="block">
+          <h4>Что замеряем на обследовании</h4>
+          <ul>
+            <li>Сколько часов уходит на выпуск КМД типового корпуса</li>
+            <li>Какая доля этого времени — механические операции</li>
+            <li>Сколько ревизий проходит объект и сколько стоит каждая</li>
+            <li>Доля возвратов и переделок, их причины</li>
+            <li>Процент отхода профиля при раскрое</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="block edge-code" style="background:transparent;border-color:var(--teal)">
+          <h4>Иллюстрация методики</h4>
+          <p style="font-size:13px;color:var(--muted)">Условные числа, чтобы показать порядок величин. Не прогноз.</p>
+          <div class="grid g2" style="gap:10px;margin-top:4px">
+            <div class="fact" style="border-top-color:var(--teal)"><b>20</b><small>инженеров в контуре</small></div>
+            <div class="fact" style="border-top-color:var(--teal)"><b>1 ч</b><small>снято в день на человека</small></div>
+            <div class="fact" style="border-top-color:var(--teal)"><b>22</b><small>рабочих дня в месяце</small></div>
+            <div class="fact" style="border-top-color:var(--teal)"><b>440 ч</b><small>высвобожденного времени в месяц</small></div>
+          </div>
+          <p style="font-size:13.5px;margin-top:6px">440 часов — это не «сокращение штата». Это мощность КБ, которой сегодня нет, а она нужна: объём производства за год вырос почти в полтора раза.</p>
+        </div>
+      </div>
+    </div>
+    <div class="stamp"><span>Лист 19</span><span>20</span></div>
+  </div>
+</section>
+
+<!-- 22 ============================================================ -->
+<section class="sheet" data-label="Вопросы">
+  <div class="frame">
+    <div class="eyebrow">Раздел 9 · Что дальше</div>
+    <h2>Вопросы, которые помогут определить, где нужна автоматизация</h2>
+    <ol class="steps">
+      <li><span class="n">01</span><span>Какая операция при выпуске КМД занимает у инженера больше всего времени?</span><span class="rep low"></span></li>
+      <li><span class="n">02</span><span>Что сегодня переносится руками между Revit, AutoCAD, SolidWorks и Excel?</span><span class="rep low"></span></li>
+      <li><span class="n">03</span><span>Из-за чего КМД чаще всего возвращается на доработку?</span><span class="rep low"></span></li>
+      <li><span class="n">04</span><span>Какая часть работы держится на знаниях одного-двух опытных инженеров?</span><span class="rep low"></span></li>
+      <li><span class="n">05</span><span>Какие макросы, LISP, Dynamo-скрипты и шаблоны Excel уже используются в отделе?</span><span class="rep low"></span></li>
+      <li><span class="n">06</span><span>Сколько ревизий проходит типовой объект и во сколько обходится одна?</span><span class="rep low"></span></li>
+      <li><span class="n">07</span><span>Если объём вырастет ещё в полтора раза — где первым появится узкое место?</span><span class="rep low"></span></li>
+    </ol>
+    <div class="stamp"><span>Лист 20</span><span>20</span></div>
+  </div>
+</section>
+
+</div><!-- /deck -->
+
+<nav class="rail" id="rail" aria-label="Навигация по листам"></nav>
+<div class="hint mono">← → листать</div>
+
+<script>
+(function(){
+  var deck = document.getElementById('deck');
+  var sheets = Array.prototype.slice.call(deck.querySelectorAll('.sheet'));
+  var rail = document.getElementById('rail');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  sheets.forEach(function(s, i){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = String(i+1).padStart(2,'0');
+    b.title = s.dataset.label || ('Лист ' + (i+1));
+    b.setAttribute('aria-label', 'Лист ' + (i+1) + ': ' + b.title);
+    b.addEventListener('click', function(){ go(i); });
+    rail.appendChild(b);
+  });
+  var dots = Array.prototype.slice.call(rail.children);
+
+  function current(){
+    var top = deck.scrollTop, best = 0, dist = Infinity;
+    sheets.forEach(function(s,i){
+      var d = Math.abs(s.offsetTop - top);
+      if (d < dist){ dist = d; best = i; }
+    });
+    return best;
+  }
+  function go(i){
+    i = Math.max(0, Math.min(sheets.length-1, i));
+    deck.scrollTo({ top: sheets[i].offsetTop, behavior: reduce ? 'auto' : 'smooth' });
+  }
+  function mark(){
+    var c = current();
+    dots.forEach(function(d,i){ d.setAttribute('aria-current', i === c ? 'true' : 'false'); });
+  }
+  var t;
+  deck.addEventListener('scroll', function(){ clearTimeout(t); t = setTimeout(mark, 90); });
+  mark();
+
+  document.addEventListener('keydown', function(e){
+    if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown' || k === ' '){ e.preventDefault(); go(current()+1); }
+    else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp'){ e.preventDefault(); go(current()-1); }
+    else if (k === 'Home'){ e.preventDefault(); go(0); }
+    else if (k === 'End'){ e.preventDefault(); go(sheets.length-1); }
+  });
+})();
+</script>
